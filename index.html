@@ -8,5 +8,81 @@
   </head>
   <body>
     <div id="app"></div>
+    <main class="container">
+      <header class="scoreboard">
+        <h1>🐾 Puppy Bowl 🏈</h1>
+      </header>
+
+      <section class="layout">
+        <aside class="roster">
+          <h2>Roster</h2>
+          <ul id="players-list" class="players-list">
+            <!-- Player items will be inserted here -->
+          </ul>
+        </aside>
+
+        <section class="details">
+          <div id="details-card" class="card">
+            <p id="no-selection" class="no-selection">
+              Select a puppy to see details.
+            </p>
+
+            <div id="player-details" class="player-details hidden">
+              <img id="player-image" alt="" class="player-image" />
+              <div class="meta">
+                <h3 id="player-name"></h3>
+                <p><strong>ID:</strong> <span id="player-id"></span></p>
+                <p><strong>Breed:</strong> <span id="player-breed"></span></p>
+                <p><strong>Team:</strong> <span id="player-team"></span></p>
+                <p><strong>Status:</strong> <span id="player-status"></span></p>
+                <button id="remove-btn" class="btn remove">
+                  Remove from roster
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card add-form">
+            <h3>Invite a puppy</h3>
+            <form id="add-puppy-form">
+              <label>
+                Name
+                <input type="text" id="name" name="name" required />
+              </label>
+              <label>
+                Breed
+                <input type="text" id="breed" name="breed" required />
+              </label>
+              <label>
+                Status
+                <select id="status" name="status">
+                  <option value="bench">Bench</option>
+                  <option value="active">Active</option>
+                  <option value="injured">Injured</option>
+                </select>
+              </label>
+              <label>
+                Image URL
+                <input
+                  type="url"
+                  id="image"
+                  name="image"
+                  placeholder="https://…"
+                />
+              </label>
+              <label>
+                Team (optional)
+                <select id="team-select" name="team">
+                  <option value="">Unassigned</option>
+                  <!-- team options appended by JS -->
+                </select>
+              </label>
+
+              <button type="submit" class="btn">Invite puppy</button>
+            </form>
+          </div>
+        </section>
+      </section>
+    </main>
   </body>
 </html>

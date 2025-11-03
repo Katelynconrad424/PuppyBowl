@@ -1,105 +1,166 @@
-//If you would like to, you can create a variable to store the API_URL here.
-//This is optional. if you do not want to, skip this and move on.
+// ===== CONFIG =====
+const COHORT = "2510-KATELYN";
+const BASE_URL = `https://fsa-puppy-bowl.herokuapp.com/api/${COHORT}`;
 
+// ===== API HELPERS =====
+async function apiGet(path) {
+  const res = await fetch(`${BASE_URL}${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}`);
+  return res.json();
+}
 
-/////////////////////////////
-/*This looks like a good place to declare any state or global variables you might need*/
+async function apiPost(path, body) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST failed at ${path}`);
+  return res.json();
+}
 
-////////////////////////////
+async function apiDelete(path) {
+  const res = await fetch(`${BASE_URL}${path}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`DELETE failed at ${path}`);
+  return res.json();
+}
 
+// ===== FETCH DATA =====
+async function getAllPlayers() {
+  const payload = await apiGet("/players");
+  return payload?.data?.players || [];
+}
 
+async function getTeams() {
+  const payload = await apiGet("/teams");
+  return payload?.data?.teams || [];
+}
 
-/**
- * Fetches all players from the API.
- * This function should not be doing any rendering
- * @returns {Object[]} the array of player objects
- */
-const fetchAllPlayers = async () => {
-  //TODO
+// ===== RENDER =====
+function renderPlayers(players) {
+  const list = document.getElementById("players-list");
+  list.innerHTML = "";
 
-};
+  players.forEach((p) => {
+    const li = document.createElement("li");
+    li.className = "player-item";
+    li.dataset.id = p.id;
 
-/**
- * Fetches a single player from the API.
- * This function should not be doing any rendering
- * @param {number} playerId
- * @returns {Object} the player object
- */
-const fetchSinglePlayer = async (playerId) => {
-  //TODO
-};
+    const img = document.createElement("img");
+    img.src = p.imageUrl || "https://place-puppy.com/200x200";
+    img.alt = p.name || "Puppy";
+    li.appendChild(img);
 
-/**
- * Adds a new player to the roster via the API.
- * Once a player is added to the database, the new player
- * should appear in the all players page without having to refresh
- * @param {Object} newPlayer the player to add
- */
-/* Note: we need data from our user to be able to add a new player
- * Do we have a way to do that currently...? 
-*/
-/**
- * Note#2: addNewPlayer() expects you to pass in a
- * new player object when you call it. How can we
- * create a new player object and then pass it to addNewPlayer()?
- */
+    const span = document.createElement("span");
+    span.textContent = p.name;
+    li.appendChild(span);
 
-const addNewPlayer = async (newPlayer) => {
-  //TODO
-};
+    li.addEventListener("click", () => showPlayerDetails(p));
+    list.appendChild(li);
+  });
+}
 
-/**
- * Removes a player from the roster via the API.
- * Once the player is removed from the database,
- * the player should also be removed from our view without refreshing
- * @param {number} playerId the ID of the player to remove
- */
-/**
- * Note: In order to call removePlayer() some information is required.
- * Unless we get that information, we cannot call removePlayer()....
- */
-/**
- * Note#2: Don't be afraid to add parameters to this function if you need to!
- */
+function renderTeams(teams) {
+  const select = document.getElementById("team-select");
+  select.innerHTML = '<option value="">Unassigned</option>';
 
-const removePlayer = async (playerId) => {
-  //TODO
+  teams.forEach((team) => {
+    const opt = document.createElement("option");
+    opt.value = team.id;
+    opt.textContent = team.name;
+    select.appendChild(opt);
+  });
+}
 
-};
+// ===== PLAYER DETAILS =====
+function showPlayerDetails(player) {
+  document.getElementById("no-selection").classList.add("hidden");
+  document.getElementById("player-details").classList.remove("hidden");
 
-/**
- * Updates html to display a list of all players or a single player page.
- *
- * If there are no players, a corresponding message is displayed instead.
- *
- * Each player in the all player list is displayed with the following information:
- * - name
- * - id
- * - image (with alt text of the player's name)
- *
- * Additionally, for each player we should be able to:
- * - See details of a single player. The page should show
- *    specific details about the player clicked 
- * - Remove from roster. when clicked, should remove the player
- *    from the database and our current view without having to refresh
- *
- */
-const render = () => {
-  // TODO
+  document.getElementById("player-image").src = player.imageUrl || "";
+  document.getElementById("player-name").textContent = player.name || "Unnamed";
+  document.getElementById("player-id").textContent = player.id || "";
+  document.getElementById("player-breed").textContent = player.breed || "";
+  document.getElementById("player-status").textContent = player.status || "";
+  document.getElementById("player-team").textContent =
+    player.team?.name || "Unassigned";
+  // 🐾 Pawprint cursor trail effect
+  let lastPawTime = 0;
 
-  
-};
+  document.addEventListener("mousemove", (e) => {
+    const now = Date.now();
+    // limit how often paws appear (every 120ms)
+    if (now - lastPawTime < 120) return;
+    lastPawTime = now;
 
+    const paw = document.createElement("div");
+    paw.textContent = "🐾";
+    paw.className = "pawprint";
 
-/**
- * Initializes the app by calling render
- * HOWEVER....
- */
-const init = async () => {
-  //Before we render, what do we always need...?
+    // random slight variation for realism
+    const size = 1.5 + Math.random() * 0.8; // 1.5–2.3rem
+    const offsetX = (Math.random() - 0.5) * 40; // horizontal wiggle
+    paw.style.left = `${e.pageX + offsetX}px`;
+    paw.style.top = `${e.pageY}px`;
+    paw.style.fontSize = `${size}rem`;
 
-  render();
+    document.body.appendChild(paw);
 
-};
+    // remove paw after animation
+    setTimeout(() => paw.remove(), 1200);
+  });
+
+  const removeBtn = document.getElementById("remove-btn");
+  removeBtn.onclick = async () => {
+    if (confirm(`Remove ${player.name}?`)) {
+      await removePlayer(player.id);
+    }
+  };
+}
+
+// ===== REMOVE PLAYER =====
+async function removePlayer(id) {
+  try {
+    await apiDelete(`/players/${id}`);
+    alert("Puppy removed!");
+    init(); // reload list
+  } catch (err) {
+    console.error("Remove failed:", err);
+  }
+}
+
+// ===== ADD PLAYER FORM =====
+const form = document.getElementById("add-puppy-form");
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const newPup = {
+    name: form.name.value,
+    breed: form.breed.value,
+    status: form.status.value,
+    imageUrl: form.image.value,
+    teamId: form.team.value || null,
+  };
+
+  try {
+    await apiPost("/players", newPup);
+    form.reset();
+    alert("New puppy invited!");
+    init();
+  } catch (err) {
+    console.error("Add puppy failed:", err);
+  }
+});
+
+// ===== MAIN INIT =====
+async function init() {
+  try {
+    const [players, teams] = await Promise.all([getAllPlayers(), getTeams()]);
+    renderPlayers(players);
+    renderTeams(teams);
+  } catch (err) {
+    console.error("Failed to load data:", err);
+  }
+}
 
 init();
