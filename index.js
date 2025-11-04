@@ -1,166 +1,165 @@
-// ===== CONFIG =====
-const COHORT = "2510-KATELYN";
-const BASE_URL = `https://fsa-puppy-bowl.herokuapp.com/api/${COHORT}`;
+// puppy bowl project i think?
+const cohort = "2510-KATELYN";
+const baseUrl = `https://fsa-puppy-bowl.herokuapp.com/api/${cohort}`;
 
-// ===== API HELPERS =====
-async function apiGet(path) {
-  const res = await fetch(`${BASE_URL}${path}`);
-  if (!res.ok) throw new Error(`Failed to fetch ${path}`);
-  return res.json();
+// get all puppies
+async function getPlayers() {
+  try {
+    const res = await fetch(baseUrl + "/players");
+    const data = await res.json();
+    console.log("players:", data);
+    return data.data.players;
+  } catch (err) {
+    console.log("error getting players", err);
+  }
 }
 
-async function apiPost(path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`POST failed at ${path}`);
-  return res.json();
-}
-
-async function apiDelete(path) {
-  const res = await fetch(`${BASE_URL}${path}`, { method: "DELETE" });
-  if (!res.ok) throw new Error(`DELETE failed at ${path}`);
-  return res.json();
-}
-
-// ===== FETCH DATA =====
-async function getAllPlayers() {
-  const payload = await apiGet("/players");
-  return payload.data.players || [];
-}
-
+// get teams
 async function getTeams() {
-  const payload = await apiGet("/teams");
-  return payload.data.teams || [];
+  try {
+    const res = await fetch(baseUrl + "/teams");
+    const data = await res.json();
+    console.log("teams:", data);
+    return data.data.teams;
+  } catch (err) {
+    console.log("error loading teams", err);
+  }
 }
 
-// ===== RENDER =====
-function renderPlayers(players) {
-  const list = document.getElementById("players-list");
+// show all puppies on page
+function showPlayers(players) {
+  let list = document.getElementById("players-list");
   list.innerHTML = "";
 
-  players.forEach((p) => {
-    const li = document.createElement("li");
-    li.className = "player-item";
-    li.dataset.id = p.id;
+  for (let i = 0; i < players.length; i++) {
+    let pup = players[i];
+    let li = document.createElement("li");
 
-    const img = document.createElement("img");
-    img.src = p.imageUrl || "https://place-puppy.com/200x200";
-    img.alt = p.name || "Puppy";
+    let img = document.createElement("img");
+    img.src = pup.imageUrl;
+    img.alt = pup.name;
+
+    let name = document.createElement("p");
+    name.textContent = pup.name;
+
     li.appendChild(img);
+    li.appendChild(name);
 
-    const span = document.createElement("span");
-    span.textContent = p.name;
-    li.appendChild(span);
+    li.addEventListener("click", function () {
+      showDetails(pup);
+    });
 
-    li.addEventListener("click", () => showPlayerDetails(p));
     list.appendChild(li);
-  });
+  }
 }
 
-function renderTeams(teams) {
-  const select = document.getElementById("team-select");
-  select.innerHTML = '<option value="">Unassigned</option>';
+// show details when you click
+function showDetails(puppy) {
+  document.getElementById("no-selection").style.display = "none";
+  document.getElementById("player-details").style.display = "block";
 
-  teams.forEach((team) => {
-    const opt = document.createElement("option");
-    opt.value = team.id;
-    opt.textContent = team.name;
-    select.appendChild(opt);
-  });
-}
+  document.getElementById("player-image").src = puppy.imageUrl;
+  document.getElementById("player-name").textContent = puppy.name;
+  document.getElementById("player-id").textContent = puppy.id;
+  document.getElementById("player-breed").textContent = puppy.breed;
+  document.getElementById("player-status").textContent = puppy.status;
 
-// ===== PLAYER DETAILS =====
-function showPlayerDetails(player) {
-  document.getElementById("no-selection").classList.add("hidden");
-  document.getElementById("player-details").classList.remove("hidden");
+  if (puppy.team) {
+    document.getElementById("player-team").textContent = puppy.team.name;
+  } else {
+    document.getElementById("player-team").textContent = "none";
+  }
 
-  document.getElementById("player-image").src = player.imageUrl || "";
-  document.getElementById("player-name").textContent = player.name || "Unnamed";
-  document.getElementById("player-id").textContent = player.id || "";
-  document.getElementById("player-breed").textContent = player.breed || "";
-  document.getElementById("player-status").textContent = player.status || "";
-  document.getElementById("player-team").textContent =
-    player.team?.name || "Unassigned";
-  // 🐾 Pawprint cursor trail effect
-  let lastPawTime = 0;
-
-  document.addEventListener("mousemove", (e) => {
-    const now = Date.now();
-    // limit how often paws appear (every 120ms)
-    if (now - lastPawTime < 120) return;
-    lastPawTime = now;
-
-    const paw = document.createElement("div");
-    paw.textContent = "🐾";
-    paw.className = "pawprint";
-
-    // random slight variation for realism
-    const size = 1.5 + Math.random() * 0.8; // 1.5–2.3rem
-    const offsetX = (Math.random() - 0.5) * 40; // horizontal wiggle
-    paw.style.left = `${e.pageX + offsetX}px`;
-    paw.style.top = `${e.pageY}px`;
-    paw.style.fontSize = `${size}rem`;
-
-    document.body.appendChild(paw);
-
-    // remove paw after animation
-    setTimeout(() => paw.remove(), 1200);
-  });
-
-  const removeBtn = document.getElementById("remove-btn");
-  removeBtn.onclick = async () => {
-    if (confirm(`Remove ${player.name}?`)) {
-      await removePlayer(player.id);
+  let removeBtn = document.getElementById("remove-btn");
+  removeBtn.onclick = async function () {
+    let sure = confirm("do you want to remove " + puppy.name + "?");
+    if (sure) {
+      await removePuppy(puppy.id);
     }
   };
 }
 
-// ===== REMOVE PLAYER =====
-async function removePlayer(id) {
+// delete puppy
+async function removePuppy(id) {
   try {
-    await apiDelete(`/players/${id}`);
-    alert("Puppy removed!");
-    init(); // reload list
+    let res = await fetch(baseUrl + "/players/" + id, {
+      method: "DELETE",
+    });
+    let data = await res.json();
+    console.log("deleted:", data);
+    alert("puppy gone :(");
+    start();
   } catch (err) {
-    console.error("Remove failed:", err);
+    console.log("delete didnt work", err);
   }
 }
 
-// ===== ADD PLAYER FORM =====
-const form = document.getElementById("add-puppy-form");
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+// add new puppy
+let form = document.getElementById("add-puppy-form");
 
-  const newPup = {
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();
+  console.log("form submitted");
+
+  let newPuppy = {
     name: form.name.value,
     breed: form.breed.value,
     status: form.status.value,
     imageUrl: form.image.value,
-    teamId: form.team.value || null,
+    teamId: form.team.value,
   };
 
   try {
-    await apiPost("/players", newPup);
+    let res = await fetch(baseUrl + "/players", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newPuppy),
+    });
+    let data = await res.json();
+    console.log("added new puppy", data);
+    alert("yay new puppy added!!");
     form.reset();
-    alert("New puppy invited!");
-    init();
+    start();
   } catch (err) {
-    console.error("Add puppy failed:", err);
+    console.log("add puppy fail", err);
   }
 });
 
-// ===== MAIN INIT =====
-async function init() {
-  try {
-    const [players, teams] = await Promise.all([getAllPlayers(), getTeams()]);
-    renderPlayers(players);
-    renderTeams(teams);
-  } catch (err) {
-    console.error("Failed to load data:", err);
+// paw print thing i copied from online
+let lastPaw = 0;
+document.addEventListener("mousemove", function (e) {
+  let now = Date.now();
+  if (now - lastPaw < 160) return;
+  lastPaw = now;
+
+  let paw = document.createElement("div");
+  paw.textContent = "🐾";
+  paw.classList.add("pawprint");
+  paw.style.left = e.pageX + "px";
+  paw.style.top = e.pageY + "px";
+  paw.style.fontSize = 1.5 + Math.random() + "rem";
+  document.body.appendChild(paw);
+
+  setTimeout(function () {
+    paw.remove();
+  }, 1200);
+});
+
+// start app
+async function start() {
+  console.log("starting app...");
+  let players = await getPlayers();
+  let teams = await getTeams();
+  showPlayers(players);
+  let select = document.getElementById("team-select");
+  select.innerHTML = "<option value=''>none</option>";
+  for (let i = 0; i < teams.length; i++) {
+    let t = teams[i];
+    let opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.name;
+    select.appendChild(opt);
   }
 }
 
-init();
+start();
