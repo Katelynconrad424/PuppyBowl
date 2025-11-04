@@ -28,12 +28,12 @@ async function apiDelete(path) {
 // ===== FETCH DATA =====
 async function getAllPlayers() {
   const payload = await apiGet("/players");
-  return payload?.data?.players || [];
+  return payload.data.players || [];
 }
 
 async function getTeams() {
   const payload = await apiGet("/teams");
-  return payload?.data?.teams || [];
+  return payload.data.teams || [];
 }
 
 // ===== RENDER =====
